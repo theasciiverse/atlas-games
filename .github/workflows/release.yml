@@ -1,3 +1,4 @@
+# Asciiverse release workflow (tag v* or run by hand with a tag)
 # Builds the Atlas Games titles for the Asciiverse catalog and as system
 # packages: Wilson's Revenge (cmd/wilsons-revenge) and WFC Worlds
 # (cmd/wfc-worlds), one archive per title and target in one release.
