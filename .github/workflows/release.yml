@@ -1,0 +1,93 @@
+# Builds the Atlas Games titles for the Asciiverse catalog and as system
+# packages: Wilson's Revenge (cmd/wilsons-revenge) and WFC Worlds
+# (cmd/wfc-worlds), one archive per title and target in one release.
+#
+# For av: archives named <id>-<target>.tar.gz (Linux, macOS) or .zip
+# (Windows), plus a SHA256SUMS file (hub/catalog/SCHEMA.md, Collections).
+# For everyone else: .deb, .rpm, .apk and Arch packages from the same Linux
+# binaries, made by nfpm (asciiverse/nfpm-<id>.yaml).
+#
+# Tags look like v0.6.1-av.1: upstream's version (recipe.piml), then our
+# packaging release. Pure Go with CGO off, so every target cross-compiles
+# on one Linux runner into a static binary.
+
+name: release
+
+on:
+  push:
+    tags: ["v*-av.*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "existing tag to build and release"
+        required: true
+
+env:
+  TITLES: wilsons-revenge wfc-worlds
+  TAG: ${{ inputs.tag || github.ref_name }}
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build
+        run: |
+          v="${TAG#v}"
+          mkdir -p dist
+          build() { # id goos goarch target-triple
+            out="stage-$1-$4"; mkdir -p "$out"
+            exe="$1"; [ "$2" = windows ] && exe="$1.exe"
+            CGO_ENABLED=0 GOOS=$2 GOARCH=$3 go build -trimpath \
+              -ldflags "-s -w -X main.Version=$v" -o "$out/$exe" "./cmd/$1"
+            cp LICENSE PATCHES.md "$out/"
+            if [ "$2" = windows ]; then (cd "$out" && zip -q -r "../dist/$1-$4.zip" .)
+            else tar -czf "dist/$1-$4.tar.gz" -C "$out" .; fi
+          }
+          for id in $TITLES; do
+            build $id linux   amd64 x86_64-unknown-linux-musl
+            build $id linux   arm64 aarch64-unknown-linux-musl
+            build $id darwin  amd64 x86_64-apple-darwin
+            build $id darwin  arm64 aarch64-apple-darwin
+            build $id windows amd64 x86_64-pc-windows-msvc
+          done
+          ls -l dist
+
+      - name: System packages
+        run: |
+          v="${TAG#v}"; export VERSION="${v%%-av.*}" RELEASE="${v##*-av.}"
+          for id in $TITLES; do
+            for pair in amd64:x86_64 arm64:aarch64; do
+              export ARCH="${pair%%:*}"
+              rm -rf stage && mkdir stage && cp "stage-$id-${pair##*:}-unknown-linux-musl/$id" stage/
+              for p in deb rpm apk archlinux; do
+                docker run --rm -u "$(id -u):$(id -g)" -v "$PWD":/src -w /src \
+                  -e VERSION -e RELEASE -e ARCH goreleaser/nfpm:v2.43.0 \
+                  package --config "asciiverse/nfpm-$id.yaml" --packager "$p" --target dist/
+              done
+            done
+          done
+          ls -l dist
+
+      - name: Checksums
+        working-directory: dist
+        run: sha256sum * > SHA256SUMS && cat SHA256SUMS
+
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
+            || gh release create "$TAG" -R "$GITHUB_REPOSITORY" --title "Atlas Games $TAG" \
+                 --notes "Wilson's Revenge and WFC Worlds from fezcode's Atlas Games ${TAG%%-av.*} (github.com/fezcode/atlas.games), built for the Asciiverse catalog, with .deb, .rpm, .apk and Arch packages. Changes from upstream: see PATCHES.md."
+          gh release upload "$TAG" dist/* -R "$GITHUB_REPOSITORY" --clobber

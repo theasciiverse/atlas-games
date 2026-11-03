@@ -20,14 +20,20 @@ func main() {
 		case "-h", "--help", "help":
 			fmt.Println("Wilson's Revenge: a three-lane terminal runner.")
 			fmt.Println("\nUsage:")
-			fmt.Println("  wilsons-revenge      Play")
-			fmt.Println("  wilsons-revenge -v   Show version")
-			fmt.Println("  wilsons-revenge -h   Show this help")
+			fmt.Println("  wilsons-revenge          Play")
+			fmt.Println("  wilsons-revenge --demo   Watch Wilson play himself (any key quits)")
+			fmt.Println("  wilsons-revenge -v       Show version")
+			fmt.Println("  wilsons-revenge -h       Show this help")
+			fmt.Println("\nLOG_LEVEL=debug wilsons-revenge 2>wilson.log writes a session log.")
 			return
 		}
 	}
 
-	p := tea.NewProgram(wilson.NewModel(), tea.WithAltScreen())
+	model := wilson.NewModel()
+	if len(os.Args) > 1 && os.Args[1] == "--demo" {
+		model = wilson.NewDemoModel()
+	}
+	p := tea.NewProgram(model, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error running game: %v\n", err)
 		os.Exit(1)

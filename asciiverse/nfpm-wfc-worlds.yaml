@@ -1,0 +1,33 @@
+# System packages (.deb, .rpm, .apk, Arch) for wfc-worlds, built by nfpm from
+# the same static binary as the av archive. The release workflow sets
+# VERSION, RELEASE (our packaging release) and ARCH (amd64 or arm64), and
+# puts the binary at stage/wfc-worlds.
+#
+# No .desktop file on purpose: av is the one place titles are started from,
+# so Asciiverse packages never add menu entries.
+name: wfc-worlds
+arch: ${ARCH}
+platform: linux
+version: ${VERSION}
+release: ${RELEASE}
+section: games
+priority: optional
+maintainer: Asciiverse <packages@asciiverse.sh>
+vendor: Asciiverse
+homepage: https://github.com/theasciiverse/atlas-games
+license: MIT
+description: |
+  Wave Function Collapse worlds growing in the terminal.
+  Landscapes and cities settle out of a fog of question marks by Wave
+  Function Collapse, one after the other, filling the window. From
+  fezcode's Atlas Games, packaged by Asciiverse.
+contents:
+  - src: stage/wfc-worlds
+    dst: /usr/bin/wfc-worlds
+    file_info: { mode: 0755 }
+  - src: LICENSE
+    dst: /usr/share/doc/wfc-worlds/copyright
+    file_info: { mode: 0644 }
+  - src: PATCHES.md
+    dst: /usr/share/doc/wfc-worlds/PATCHES.md
+    file_info: { mode: 0644 }

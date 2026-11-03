@@ -33,6 +33,10 @@ type tickMsg time.Time
 
 type Model struct {
 	State *GameState
+	// Demo plays by itself (--demo, the catalog preview): it starts on its
+	// own, restarts after each crash, and any key quits.
+	Demo  bool
+	idle  int // demo frames spent on the title or the game-over screen
 }
 
 func NewModel() Model {
@@ -41,30 +45,47 @@ func NewModel() Model {
 	}
 }
 
+// NewDemoModel is NewModel playing itself.
+func NewDemoModel() Model {
+	m := NewModel()
+	m.Demo = true
+	return m
+}
+
 func (m Model) Init() tea.Cmd {
+	logger.Info("start", "demo", m.Demo)
 	return tick()
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		logger.Debug("key", "key", msg.String())
+		if m.Demo {
+			logger.Info("quit")
+			return m, tea.Quit
+		}
 		switch msg.String() {
 		case "q", "ctrl+c":
+			logger.Info("quit", "score", m.State.Score)
 			return m, tea.Quit
 		case "r":
 			if m.State.GameOver {
 				m.State = NewGameState()
 				m.State.Started = true
+				logger.Info("restart")
 				return m, tick()
 			}
 		case "p":
 			m.State.TogglePause()
+			logger.Info("pause", "paused", m.State.Paused)
 			if !m.State.Paused {
 				return m, tick()
 			}
 		case " ":
 			if !m.State.Started {
 				m.State.Started = true
+				logger.Info("run started")
 				return m, tick()
 			}
 			if !m.State.GameOver && !m.State.Paused {
@@ -85,9 +106,30 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tickMsg:
-		if m.State.Started && !m.State.GameOver && !m.State.Paused {
-			m.State.Update()
+		if m.Demo && (!m.State.Started || m.State.GameOver) {
+			// two seconds on the title, three on the crash, then go again
+			m.idle++
+			if (!m.State.Started && m.idle >= 50) || (m.State.GameOver && m.idle >= 75) {
+				m.State = NewGameState()
+				m.State.Started = true
+				m.idle = 0
+				logger.Info("run started", "demo", true)
+			}
 			return m, tick()
+		}
+		if m.State.Started && !m.State.GameOver && !m.State.Paused {
+			if m.Demo {
+				m.State.Autopilot()
+			}
+			before := *m.State
+			m.State.Update()
+			logChanges(before, m.State)
+			if m.State.FrameCount%12 == 0 {
+				logSnapshot(m.State)
+			}
+			if m.Demo || !m.State.GameOver {
+				return m, tick()
+			}
 		}
 	}
 

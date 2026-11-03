@@ -1,0 +1,33 @@
+# System packages (.deb, .rpm, .apk, Arch) for wilsons-revenge, built by nfpm from
+# the same static binary as the av archive. The release workflow sets
+# VERSION, RELEASE (our packaging release) and ARCH (amd64 or arm64), and
+# puts the binary at stage/wilsons-revenge.
+#
+# No .desktop file on purpose: av is the one place titles are started from,
+# so Asciiverse packages never add menu entries.
+name: wilsons-revenge
+arch: ${ARCH}
+platform: linux
+version: ${VERSION}
+release: ${RELEASE}
+section: games
+priority: optional
+maintainer: Asciiverse <packages@asciiverse.sh>
+vendor: Asciiverse
+homepage: https://github.com/theasciiverse/atlas-games
+license: MIT
+description: |
+  Three-lane chicken runner for the terminal.
+  Wilson the chicken dodges cars, jumps barricades and blasts through
+  with a pick-up shotgun, on a road that keeps getting faster. From
+  fezcode's Atlas Games, packaged by Asciiverse.
+contents:
+  - src: stage/wilsons-revenge
+    dst: /usr/bin/wilsons-revenge
+    file_info: { mode: 0755 }
+  - src: LICENSE
+    dst: /usr/share/doc/wilsons-revenge/copyright
+    file_info: { mode: 0644 }
+  - src: PATCHES.md
+    dst: /usr/share/doc/wilsons-revenge/PATCHES.md
+    file_info: { mode: 0644 }

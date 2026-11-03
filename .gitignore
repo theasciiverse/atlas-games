@@ -8,3 +8,5 @@ vendor/
 build/
 .vscode/
 *.exe~
+stage-*/
+dist/
