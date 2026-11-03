@@ -174,10 +174,11 @@ func (m Model) View() string {
 		}
 	}
 
-	// Sun
-	stamp(buffer, GameWidth-15, 1, "\\ | /", sunStyle)
+	// Sun: the rays above and below are two narrower than "-- O --", so
+	// they start one column further in to centre on the O
+	stamp(buffer, GameWidth-14, 1, "\\ | /", sunStyle)
 	stamp(buffer, GameWidth-15, 2, "-- O --", sunStyle)
-	stamp(buffer, GameWidth-15, 3, "/ | \\", sunStyle)
+	stamp(buffer, GameWidth-14, 3, "/ | \\", sunStyle)
 
 	// Background
 	for _, bg := range m.State.Background {

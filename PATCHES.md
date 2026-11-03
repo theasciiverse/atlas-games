@@ -20,8 +20,9 @@ collection rule each title gets its own binary, and upstream's own menu
     stderr. Debug logs every key as it arrives, start, pause, crash, the
     gun, ammo, power-ups and jumping lost or regained, and a snapshot of
     the run twice a second. `LOG_LEVEL=debug wilsons-revenge 2>wilson.log`.
-  - In `internal/wilson/ui.go` only the update loop changed, to drive the
-    two above.
+  - In `internal/wilson/ui.go` the update loop changed, to drive the
+    two above, and the sun's top and bottom rays moved one column right,
+    so they centre on the O as the middle row does.
 - **WFC Worlds** (`cmd/wfc-worlds`, `internal/worlds`), for Art & Demos: the land
   and city generators (`internal/wfc`, `internal/city`, unchanged) played as a
   demo. Each world fills the window (upstream's are a fixed 200x60), grows in
